@@ -1,0 +1,48 @@
+
+apply 
+
+
+thermal() {
+    find /system/etc/init /vendor/etc/init /odm/etc/init -type f 2>/dev/null | xargs grep -h "^service" | awk '{print $2}' | grep thermal
+}
+
+thermal_service=$(thermal)
+
+if [ "$thermal_service" != "vendor.thermal-hal" ] && [ "$thermal_service" != "android.hardware.thermal-service.mediatek" ]; then
+    stop "$thermal_service"
+    sleep 0.5
+    pid=$(pidof "$thermal_service")
+    if [ -n "$pid" ]; then
+        kill -9 "$pid"
+    fi
+fi
+
+# Reset thermal prop
+getprop | awk -F '[][]' '/ro.*thermal/ {print $2}' | while read -r prop; do
+    resetprop -n "$prop" 0
+done
+
+for prop in $(getprop | grep thermal | cut -f1 -d] | cut -f2 -d[ | grep -F init.svc.); do
+    setprop "$prop" stopped
+done
+
+for prop in $(getprop | grep thermal | cut -f1 -d] | cut -f2 -d[ | grep -F init.svc_); do
+    setprop "$prop" ""
+done
+# Disable GPU Power limiter
+	[ -f "/proc/gpufreq/gpufreq_power_limited" ] && {
+		for setting in ignore_batt_oc ignore_batt_percent ignore_low_batt ignore_thermal_protect ignore_pbm_limited; do
+			apply "$setting 1" /proc/gpufreq/gpufreq_power_limited
+		done
+	}
+	
+spooftemp() {
+    apply 20 /sys/class/power_supply/battery/temperature
+    }
+    
+
+# Disable battery current limiter
+	apply "stop 1" /proc/mtk_batoc_throttling/battery_oc_protect_stop
+
+# Set battery Temperature
+spooftemp
