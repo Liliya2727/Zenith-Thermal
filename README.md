@@ -1,2 +1,2 @@
 # Zenith-Thermal
-Mtk Disable thermal specially for D8050
+Mtk Disable thermal
