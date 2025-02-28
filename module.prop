@@ -1,6 +1,6 @@
 id=ZenithThermal
 name=Zenith Thermal
-version=V1.1 Stable
+version=V1.3 Stable
 versionCode=679
 author=Zexshia
-description=Disable thermal for mtk devices
+description=Disable thermal for mtk D8050
