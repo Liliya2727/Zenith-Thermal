@@ -17,18 +17,16 @@ apply() {
 }
 
 list_thermal_services() {
-	for rc in /system/etc/init/* /vendor/etc/init/* /odm/etc/init/*; do
-		grep -r "^service" "$rc" | awk '{print $2}'
-	done | grep thermal
+    find /system/etc/init/ /vendor/etc/init/ /odm/etc/init/ -type f 2>/dev/null | xargs grep "^service" | awk '{print $2}' | grep thermal
 }
 
 list_thermal_proc() {
 	ps -e -o comm= | grep thermal
 }
 
+disablethermal() {
 for svc in $(list_thermal_services); do
-	echo "Stopping $svc"
-	stop $svc
+    stop "$svc"
 done
 
 for proc in $(list_thermal_proc); do
@@ -37,9 +35,14 @@ for proc in $(list_thermal_proc); do
 done
 
 # Stop Thermal Service
-for thermalsvcmtk in android.hardware.thermal-service.mediatek android.hardware.thermal@2.0-service.mtk; do
-    stop "$thermalsvcmtk"
-    pidof "$thermalsvcmtk" | xargs -r kill -SIGSTOP
+for dead in \
+    android.hardware.thermal-service.mediatek android.hardware.thermal@2.0-service.mtk
+do
+    stop "$dead"
+    pid=$(pidof "$dead")
+    if [ -n "$pid" ]; then
+        kill -SIGSTOP "$pid"
+    fi
 done
 
 for prop in $(resetprop | grep 'thermal.*running' | awk -F '[][]' '{print $2}'); do
@@ -61,11 +64,11 @@ done
 
 # Disable thermal zones policy
 for thermalzone in /sys/class/thermal/thermal_zone*/{mode,policy}; do
-    [ -f "$thermalzone" ] && apply "${thermalzone##*/}" | sed 's/mode/disabled/;s/policy/userspace/' > "$thermalzone"
+    [ -f "$thermalzone" ] && echo "${thermalzone##*/}" | sed 's/mode/disabled/;s/policy/userspace/' > "$thermalzone"
 done
 
 if [ -d /proc/ppm ]; then
-	for idx in $(cat /proc/ppm/policy_status | grep -E 'PWR_THRO|THERMAL' | awk -F'[][]' '{print $2}'); do
+	for idx in $(cat /proc/ppm/policy_status | grep -E 'FORCE_LIMIT|PWR_THRO|THERMAL' | awk -F'[][]' '{print $2}'); do
 		apply "$idx 0" /proc/ppm/policy_status
 	done
 fi
@@ -77,42 +80,48 @@ done
 if [ -f /sys/devices/virtual/thermal/thermal_message/cpu_limits ]; then
 	for i in 0 2 4 6 7; do
 		maxfreq="$(cat /sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_max_freq)"
-		[ "$maxfreq" -gt "0" ] && apply "cpu$i $maxfreq" /sys/devices/virtual/thermal/thermal_message/cpu_limits
+		[ "$maxfreq" -gt "0" ] && echo "cpu$i $maxfreq" > /sys/devices/virtual/thermal/thermal_message/cpu_limits
 	done
 fi
 
 if [ -f /proc/driver/thermal/tzcpu ]; then
 	therlimit="125"
 	thermalval="0 0 no-cooler 0 0 no-cooler 0 0 no-cooler 0 0 no-cooler 0 0 no-cooler 0 0 no-cooler 0 0 no-cooler 0 0 no-cooler 0 0 no-cooler"
-	apply "1 ${therlimit}000 0 mtktscpu-sysrst $thermalval 200" /proc/driver/thermal/tzcpu
-	apply "1 ${therlimit}000 0 mtktspmic-sysrst $thermalval 1000" /proc/driver/thermal/tzpmic
-	apply "1 ${therlimit}000 0 mtktsbattery-sysrst $thermalval 1000" /proc/driver/thermal/tzbattery
-	apply "1 ${therlimit}000 0 mtk-cl-kshutdown00 $thermalval 2000" /proc/driver/thermal/tzpa
-	apply "1 ${therlimit}000 0 mtktscharger-sysrst $thermalval 2000" /proc/driver/thermal/tzcharger
-	apply "1 ${therlimit}000 0 mtktswmt-sysrst $thermalval 1000" /proc/driver/thermal/tzwmt
-	apply "1 ${therlimit}000 0 mtktsAP-sysrst $thermalval 1000" /proc/driver/thermal/tzbts
-	apply "1 ${therlimit}000 0 mtk-cl-kshutdown01 $thermalval 1000" /proc/driver/thermal/tzbtsnrpa
-	apply "1 ${therlimit}000 0 mtk-cl-kshutdown02 $thermalval 1000" /proc/driver/thermal/tzbtspa
+	echo "1 ${therlimit}000 0 mtktscpu-sysrst $thermalval 200" /proc/driver/thermal/tzcpu
+	echo "1 ${therlimit}000 0 mtktspmic-sysrst $thermalval 1000" /proc/driver/thermal/tzpmic
+	echo "1 ${therlimit}000 0 mtktsbattery-sysrst $thermalval 1000" /proc/driver/thermal/tzbattery
+	echo "1 ${therlimit}000 0 mtk-cl-kshutdown00 $thermalval 2000" /proc/driver/thermal/tzpa
+	echo "1 ${therlimit}000 0 mtktscharger-sysrst $thermalval 2000" /proc/driver/thermal/tzcharger
+	echo "1 ${therlimit}000 0 mtktswmt-sysrst $thermalval 1000" /proc/driver/thermal/tzwmt
+	echo "1 ${therlimit}000 0 mtktsAP-sysrst $thermalval 1000" /proc/driver/thermal/tzbts
+	echo "1 ${therlimit}000 0 mtk-cl-kshutdown01 $thermalval 1000" /proc/driver/thermal/tzbtsnrpa
+	echo "1 ${therlimit}000 0 mtk-cl-kshutdown02 $thermalval 1000" /proc/driver/thermal/tzbtspa
 fi
 
 # Disable thermal zones
 for thermalzone in /sys/class/thermal/thermal_zone*/{mode,policy}; do
-    [ -f "$thermalzone" ] && apply "${thermalzone##*/}" | sed 's/mode/disabled/;s/policy/userspace/' > "$thermalzone"
+    [ -f "$thermalzone" ] && echo "${thermalzone##*/}" | sed 's/mode/disabled/;s/policy/userspace/' > "$thermalzone"
 done
 
+sleep 2
 # Hide thermal monitoring by making files inaccessible
 find /sys/devices/virtual/thermal -type f -exec chmod 000 {} \;
 
+sleep 2
 # Disable thermal stats
 cmd thermalservice override-status 0
 
+# Disable Battery Current Limiter
+apply "stop 1" "/proc/mtk_batoc_throttling/battery_oc_protect_stop"
+
 # Battery Temp Spoof
+sleep 1
 if [ -f "$batteryspoof" ]; then
     echo "Battery Spoofing Enabled"   
     apply "35" /sys/class/power_supply/battery/temperature
 else
     echo "Battery Spoofing Disabled"
 fi
-
-# Disable Battery Current Limiter
-apply "stop 1" "/proc/mtk_batoc_throttling/battery_oc_protect_stop"
+}
+# Run Disable Thermal
+disablethermal

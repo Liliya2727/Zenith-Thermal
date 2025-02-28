@@ -6,6 +6,8 @@ if [ -f "$batteryspoof" ]; then
     echo ""
     echo "ZENITH THERMAL!"
     echo ""
+    sleep 1
+    echo "tempspoof status : Enabled"
     sleep 3
     echo ""
     echo "Disabling Temp Spoof.."
@@ -21,6 +23,8 @@ else
     echo ""
     echo "ZENITH THERMAL!"
     echo ""
+    sleep 1
+    echo "tempspoof status : Disabled"
     sleep 3
     echo ""
     echo "Enabling Temp Spoof.."
