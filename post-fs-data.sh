@@ -1,5 +1,12 @@
 #!/system/bin/sh
-resetprop -n -v debug.thermal.throttle.support no
-resetprop -n ro.vendor.mtk_thermal_2_0 0
-resetprop -n persist.thermal_config.mitigation 0
-resetprop -n ro.mtk_thermal_monitor.enabled false
+LOGFILE="/data/local/tmp/Zenith.log"
+TempUnSupport="/data/adb/modules/ZenithThermal/TempUnSupport"
+MODULE_PROP="/data/adb/modules/ZenithThermal/module.prop"
+
+
+if [ ! -f "$TempUnSupport" ]; then
+        echo "Tempspoof is Supported"
+else        
+        sed -i "s|^description=.*|description=Disable thermal for mtk D8050/D8020! Should work on other MTK devices • Tempspoof Unsupported!|" "$MODULE_PROP"
+        
+fi
