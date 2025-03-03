@@ -1,7 +1,7 @@
 id=ZenithThermal
 name=Zenith Thermal
-version=V1.7 Stable
+version=V1.7 (d28f52c-Release)
 versionCode=680
 author=Zexshia
 description=Disable thermal for mtk D8050/D8020! Should work on other MTK devices • Tempspoof Status: Disabled!❌
-updateJson=https://raw.githubusercontent.com/Liliya2727/Zenith-Thermal/refs/heads/main/update.json
+updateJson=https://raw.githubusercontent.com/Liliya2727/Zenith-Thermal/main/update.json
