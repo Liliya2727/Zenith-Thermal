@@ -28,7 +28,7 @@ ui_print "     ZenithThermal     "
 ui_print "━━━━━━━━━━━━━━━━━━━━━━━"
 ui_print "- Version  : v1.7 "
 ui_print "- Author   : @Zexshia"
-ui_print "- Release  : 02/03/2025"
+ui_print "- Release  : 04/03/2025"
 sleep 1
 ui_print "- Device   : $(getprop ro.product.board)"
 sleep 1
